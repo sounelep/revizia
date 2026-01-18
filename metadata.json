@@ -1,0 +1,8 @@
+{
+  "name": " Réviz'IA v0.9",
+  "description": "Une application d'apprentissage intelligente et ludique propulsée par l'IA Gemini.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

@@ -16,11 +16,11 @@ import MindMapEditor from './components/MindMapEditor';
 import Profile from './components/Profile';
 import AdminMathTips from './components/AdminMathTips';
 import AdminUserManagement from './components/AdminUserManagement';
-import { LogOut, Brain, MessageCircle, BookOpen, X, Home, Calculator, Mic, Languages, Zap, Users, AlertTriangle, Grid, User as UserIcon, Camera, UploadCloud, CheckCircle2, GraduationCap, ChevronRight, FileText, ImageIcon } from 'lucide-react';
+import { LogOut, Brain, MessageCircle, BookOpen, X, Home, Calculator, Mic, Languages, Zap, Users, AlertTriangle, Grid, User as UserIcon, Camera, UploadCloud, CheckCircle2, GraduationCap, ChevronRight, FileText, ImageIcon, Trash2 } from 'lucide-react';
 import { mergeAnalysis } from './services/geminiService';
 import { auth, db } from './services/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc, setDoc, onSnapshot, collection, query, orderBy } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot, collection, query, orderBy, deleteDoc } from 'firebase/firestore';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -43,7 +43,7 @@ const App: React.FC = () => {
         try {
           const userDocRef = doc(db, 'users', firebaseUser.email!);
           const userSnap = await getDoc(userDocRef);
-          
+
           if (userSnap.exists()) {
             setUser(userSnap.data() as User);
           } else {
@@ -62,7 +62,7 @@ const App: React.FC = () => {
           }
 
           const docsQuery = query(collection(db, 'users', firebaseUser.email!, 'documents'), orderBy('date', 'desc'));
-          const unsubscribeDocs = onSnapshot(docsQuery, 
+          const unsubscribeDocs = onSnapshot(docsQuery,
             (snapshot) => {
               const docs = snapshot.docs.map(d => ({ ...d.data(), id: d.id } as Document));
               setDocuments(docs);
@@ -87,17 +87,17 @@ const App: React.FC = () => {
     return () => unsubscribeAuth();
   }, []);
   useEffect(() => {
-  const timer = setTimeout(() => {
-    setBooting(false);
-  }, 1200); // 1.2s pour un effet smooth
+    const timer = setTimeout(() => {
+      setBooting(false);
+    }, 1200); // 1.2s pour un effet smooth
 
-  return () => clearTimeout(timer);
-}, []);
-  const handleLogout = async () => { 
+    return () => clearTimeout(timer);
+  }, []);
+  const handleLogout = async () => {
     await signOut(auth);
-    setCurrentRoute(AppRoute.DASHBOARD); 
+    setCurrentRoute(AppRoute.DASHBOARD);
   };
-  
+
   const handleUpdateUser = async (updatedUser: User) => {
     setUser(updatedUser);
     try {
@@ -134,17 +134,30 @@ const App: React.FC = () => {
         setHubInitialView('menu');
         setCurrentRoute(AppRoute.REVISION_CARDS);
       }
-    } catch (err: any) { 
+    } catch (err: any) {
       if (err.code === 'permission-denied') setPermissionError(true);
-      else alert(err.message || "Erreur sauvegarde."); 
-    } finally { 
-      setLoading(false); 
+      else alert(err.message || "Erreur sauvegarde.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteDocument = async (docId: string, event: React.MouseEvent) => {
+    event.stopPropagation();
+    if (!user) return;
+
+    if (window.confirm("Êtes-vous sûr de vouloir supprimer cette révision ? Cette action est irréversible.")) {
+      try {
+        await deleteDoc(doc(db, 'users', user.email, 'documents', docId));
+      } catch (err: any) {
+        alert("Erreur lors de la suppression : " + err.message);
+      }
     }
   };
 
   if (booting) {
-  return <AnalysisLoading progress={0} />;
-}
+    return <AnalysisLoading progress={0} />;
+  }
 
   if (authLoading) return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center">
@@ -155,7 +168,7 @@ const App: React.FC = () => {
     </div>
   );
 
-  if (!user) return <Login onLogin={() => {}} />;
+  if (!user) return <Login onLogin={() => { }} />;
 
   const isAdmin = user.role === 'admin';
 
@@ -190,7 +203,7 @@ const App: React.FC = () => {
       <main className="flex-1 p-4 sm:p-6 relative z-10 pb-32 space-y-8">
         {currentRoute === AppRoute.DASHBOARD && (
           <div className="space-y-8 animate-fade-in">
-            
+
             {/* Section: Capture de Cours */}
             <section className="bg-slate-900 border border-slate-800 rounded-[2.5rem] p-8 shadow-2xl space-y-6 text-center">
               <div className="space-y-1">
@@ -199,7 +212,7 @@ const App: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <button 
+                <button
                   onClick={() => setCurrentRoute(AppRoute.CAPTURE)}
                   className="p-8 bg-slate-800/30 border-2 border-dashed border-slate-800 rounded-[2rem] flex flex-col items-center gap-4 hover:border-indigo-500 hover:bg-indigo-500/5 transition-all group active:scale-95"
                 >
@@ -209,7 +222,7 @@ const App: React.FC = () => {
                   <h3 className="text-xs font-black uppercase tracking-widest text-white">Prendre Photo</h3>
                 </button>
 
-                <button 
+                <button
                   onClick={() => setCurrentRoute(AppRoute.CAPTURE)}
                   className="p-8 bg-slate-800/30 border-2 border-dashed border-slate-800 rounded-[2rem] flex flex-col items-center gap-4 hover:border-cyan-500 hover:bg-cyan-500/5 transition-all group active:scale-95"
                 >
@@ -241,7 +254,7 @@ const App: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <button 
+                <button
                   onClick={() => setCurrentRoute(AppRoute.MATHS)}
                   className="p-8 bg-slate-800/20 border border-slate-800 rounded-[2.5rem] flex flex-col items-center gap-4 hover:bg-slate-800 hover:border-slate-700 transition-all active:scale-95 group shadow-md"
                 >
@@ -251,7 +264,7 @@ const App: React.FC = () => {
                   <h3 className="text-sm font-black uppercase tracking-widest text-white">Maths</h3>
                 </button>
 
-                <button 
+                <button
                   onClick={() => setCurrentRoute(AppRoute.DICTATION)}
                   className="p-8 bg-slate-800/20 border border-slate-800 rounded-[2.5rem] flex flex-col items-center gap-4 hover:bg-slate-800 hover:border-slate-700 transition-all active:scale-95 group shadow-md"
                 >
@@ -261,7 +274,7 @@ const App: React.FC = () => {
                   <h3 className="text-sm font-black uppercase tracking-widest text-white">Dictée</h3>
                 </button>
 
-                <button 
+                <button
                   onClick={() => setCurrentRoute(AppRoute.LANGUAGES)}
                   className="p-8 bg-slate-800/20 border border-slate-800 rounded-[2.5rem] flex flex-col items-center gap-4 hover:bg-slate-800 hover:border-slate-700 transition-all active:scale-95 group shadow-md"
                 >
@@ -271,7 +284,7 @@ const App: React.FC = () => {
                   <h3 className="text-sm font-black uppercase tracking-widest text-white">Langues</h3>
                 </button>
 
-                <button 
+                <button
                   onClick={() => setCurrentRoute(AppRoute.FLASH_REVISION)}
                   className="p-8 bg-slate-800/20 border border-slate-800 rounded-[2.5rem] flex flex-col items-center gap-4 hover:bg-slate-800 hover:border-slate-700 transition-all active:scale-95 group shadow-md"
                 >
@@ -284,12 +297,12 @@ const App: React.FC = () => {
 
               {isAdmin && (
                 <div className="pt-4 grid grid-cols-2 gap-4 border-t border-slate-800/50">
-                   <button onClick={() => setCurrentRoute(AppRoute.ADMIN_MATH_TIPS)} className="py-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-center justify-center gap-2 hover:bg-amber-500/20 transition-all">
-                      <Grid className="w-4 h-4 text-amber-400" /><span className="text-[9px] font-black uppercase text-amber-400 tracking-widest">Admin Tips</span>
-                   </button>
-                   <button onClick={() => setCurrentRoute(AppRoute.ADMIN_USERS)} className="py-4 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-center justify-center gap-2 hover:bg-indigo-500/20 transition-all">
-                      <Users className="w-4 h-4 text-indigo-400" /><span className="text-[9px] font-black uppercase text-indigo-400 tracking-widest">Admin Users</span>
-                   </button>
+                  <button onClick={() => setCurrentRoute(AppRoute.ADMIN_MATH_TIPS)} className="py-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-center justify-center gap-2 hover:bg-amber-500/20 transition-all">
+                    <Grid className="w-4 h-4 text-amber-400" /><span className="text-[9px] font-black uppercase text-amber-400 tracking-widest">Admin Tips</span>
+                  </button>
+                  <button onClick={() => setCurrentRoute(AppRoute.ADMIN_USERS)} className="py-4 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-center justify-center gap-2 hover:bg-indigo-500/20 transition-all">
+                    <Users className="w-4 h-4 text-indigo-400" /><span className="text-[9px] font-black uppercase text-indigo-400 tracking-widest">Admin Users</span>
+                  </button>
                 </div>
               )}
             </section>
@@ -301,7 +314,7 @@ const App: React.FC = () => {
               </div>
               <div className="grid gap-3">
                 {documents.slice(0, 3).map((doc) => (
-                  <button 
+                  <button
                     key={doc.id}
                     onClick={() => { setSelectedDoc(doc); setCurrentRoute(AppRoute.REVISION_CARDS); setHubInitialView('menu'); }}
                     className="flex items-center gap-4 p-5 bg-slate-900 border border-slate-800 rounded-3xl hover:border-indigo-500 transition-all text-left group shadow-lg active:scale-[0.98]"
@@ -313,14 +326,23 @@ const App: React.FC = () => {
                       <p className="text-sm font-black text-white uppercase truncate">{doc.title}</p>
                       <p className="text-[9px] font-black text-slate-500 uppercase tracking-tight mt-0.5">{new Date(doc.date).toLocaleDateString()}</p>
                     </div>
+                    {/* Bouton Poubelle */}
+                    <div
+                      role="button"
+                      onClick={(e) => handleDeleteDocument(doc.id, e)}
+                      className="p-3 text-slate-600 hover:text-rose-500 hover:bg-rose-500/10 rounded-full transition-all active:scale-95"
+                      title="Supprimer la révision"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </div>
                     <ChevronRight className="w-5 h-5 text-slate-700 group-hover:translate-x-1 transition-transform" />
                   </button>
                 ))}
                 {documents.length === 0 && (
-                   <div className="p-10 border-2 border-dashed border-slate-800 rounded-[2.5rem] flex flex-col items-center justify-center gap-3 opacity-30">
-                      <BookOpen className="w-8 h-8" />
-                      <p className="text-[10px] font-black uppercase tracking-widest">Aucune révision pour le moment</p>
-                   </div>
+                  <div className="p-10 border-2 border-dashed border-slate-800 rounded-[2.5rem] flex flex-col items-center justify-center gap-3 opacity-30">
+                    <BookOpen className="w-8 h-8" />
+                    <p className="text-[10px] font-black uppercase tracking-widest">Aucune révision pour le moment</p>
+                  </div>
                 )}
               </div>
             </section>
@@ -333,13 +355,13 @@ const App: React.FC = () => {
         {currentRoute === AppRoute.LANGUAGES && <LanguageModule user={user} onXpGain={handleXpGain} />}
         {currentRoute === AppRoute.FLASH_REVISION && <DirectStudyModule user={user} onXpGain={handleXpGain} onClose={() => setCurrentRoute(AppRoute.DASHBOARD)} />}
         {currentRoute === AppRoute.REVISION_CARDS && selectedDoc && (
-          <RevisionHub 
-            document={selectedDoc} 
-            onNavigate={setCurrentRoute} 
+          <RevisionHub
+            document={selectedDoc}
+            onNavigate={setCurrentRoute}
             onUpdateDocument={(d) => {
               setSelectedDoc(d);
               setDoc(doc(db, 'users', user.email, 'documents', d.id), d);
-            }} 
+            }}
             onAddSource={() => { setIsAddingSource(true); setCurrentRoute(AppRoute.CAPTURE); }}
             initialView={hubInitialView}
           />
@@ -347,7 +369,7 @@ const App: React.FC = () => {
         {currentRoute === AppRoute.QUIZ && selectedDoc && <QuizModule questions={quizQuestions} context={selectedDoc.summary || ""} onFinish={handleXpGain} />}
         {currentRoute === AppRoute.PROFILE && <Profile user={user} onUpdateUser={handleUpdateUser} />}
         {currentRoute === AppRoute.ADMIN_MATH_TIPS && <AdminMathTips />}
-        {currentRoute === AppRoute.ADMIN_USERS && <AdminUserManagement users={[user]} currentUser={user} onUpdateUsers={() => {}} />}
+        {currentRoute === AppRoute.ADMIN_USERS && <AdminUserManagement users={[user]} currentUser={user} onUpdateUsers={() => { }} />}
       </main>
 
       <nav className="fixed bottom-0 left-0 right-0 p-4 sm:p-6 bg-slate-950/80 backdrop-blur-xl border-t border-slate-800/50 z-50 rounded-t-[3rem] no-print">
@@ -374,11 +396,11 @@ const App: React.FC = () => {
           <div className="absolute inset-0 bg-slate-950/95 backdrop-blur-md" onClick={() => setIsChatOpen(false)}></div>
           <div className="relative flex-1 bg-slate-900 border border-slate-800 rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-w-2xl mx-auto w-full">
             <header className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/50">
-               <div className="flex items-center gap-3">
-                  <div className="p-2 bg-indigo-600 rounded-xl"><MessageCircle className="w-4 h-4 text-white" /></div>
-                  <h3 className="font-black uppercase tracking-tight text-sm">Tuteur IA Interactif</h3>
-               </div>
-               <button onClick={() => setIsChatOpen(false)} className="p-2 bg-slate-800 rounded-xl hover:bg-slate-700 transition-colors"><X className="w-4 h-4 text-slate-400" /></button>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-indigo-600 rounded-xl"><MessageCircle className="w-4 h-4 text-white" /></div>
+                <h3 className="font-black uppercase tracking-tight text-sm">Tuteur IA Interactif</h3>
+              </div>
+              <button onClick={() => setIsChatOpen(false)} className="p-2 bg-slate-800 rounded-xl hover:bg-slate-700 transition-colors"><X className="w-4 h-4 text-slate-400" /></button>
             </header>
             <div className="flex-1 overflow-hidden p-4">
               <ChatModule selectedDoc={selectedDoc} onXpGain={handleXpGain} onUpdateDocument={(d) => {

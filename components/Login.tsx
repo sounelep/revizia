@@ -41,8 +41,9 @@ const Login: React.FC<Props> = () => {
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-slate-100 relative overflow-hidden">
+
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-64 h-64 bg-indigo-600/20 blur-[100px] pointer-events-none"></div>
-      
+
       <div className="w-full max-w-sm space-y-8 relative z-10">
         <div className="text-center space-y-2">
           <div className="inline-flex p-4 bg-indigo-600 rounded-3xl shadow-2xl shadow-indigo-500/20 mb-4 animate-bounce">
@@ -97,7 +98,7 @@ const Login: React.FC<Props> = () => {
           </button>
         </form>
 
-        <button 
+        <button
           onClick={() => setIsRegistering(!isRegistering)}
           className="w-full text-center text-xs font-black uppercase tracking-widest text-slate-500 hover:text-indigo-400 transition-colors"
         >

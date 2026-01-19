@@ -1,4 +1,5 @@
 
+import AnalysisLoading from './components/AnalysisLoading';
 import React, { useState, useEffect } from 'react';
 import { User, AppRoute, Document, QuizQuestion, MindMap, SourceFile } from './types';
 import Login from './components/Login';
@@ -33,6 +34,7 @@ const App: React.FC = () => {
   const [hubInitialView, setHubInitialView] = useState<'menu' | 'fiche'>('menu');
   const [isAddingSource, setIsAddingSource] = useState(false);
   const [permissionError, setPermissionError] = useState(false);
+  const [booting, setBooting] = useState(true);
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -84,7 +86,13 @@ const App: React.FC = () => {
     });
     return () => unsubscribeAuth();
   }, []);
+  useEffect(() => {
+  const timer = setTimeout(() => {
+    setBooting(false);
+  }, 1200); // 1.2s pour un effet smooth
 
+  return () => clearTimeout(timer);
+}, []);
   const handleLogout = async () => { 
     await signOut(auth);
     setCurrentRoute(AppRoute.DASHBOARD); 
@@ -133,6 +141,10 @@ const App: React.FC = () => {
       setLoading(false); 
     }
   };
+
+  if (booting) {
+  return <AnalysisLoading progress={0} />;
+}
 
   if (authLoading) return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center">
